@@ -21,6 +21,7 @@ jobs:
 
   hall-of-fame:
     needs: determine-leagues
+    timeout-minutes: 5
     strategy:
       matrix:
         league: ${{ fromJson(needs.determine-leagues.outputs.leagues) }}

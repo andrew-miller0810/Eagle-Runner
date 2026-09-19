@@ -8,6 +8,7 @@ on:
 concurrency:
   group: ff-bot-data-writes
   cancel-in-progress: false
+  queue: max
 
 jobs:
   determine-leagues:
@@ -16,6 +17,7 @@ jobs:
 
   weekly-recap:
     needs: determine-leagues
+    timeout-minutes: 5
     strategy:
       matrix:
         league: ${{ fromJson(needs.determine-leagues.outputs.leagues) }}
