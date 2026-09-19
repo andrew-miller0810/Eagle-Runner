@@ -12,6 +12,7 @@ concurrency:
 jobs:
   determine-leagues:
     uses: ./.github/workflows/_shared-league-matrix.yml
+    secrets: inherit
 
   lineup-check:
     needs: determine-leagues

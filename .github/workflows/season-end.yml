@@ -13,6 +13,7 @@ jobs:
     uses: ./.github/workflows/_shared-league-matrix.yml
     with:
       league_filter: ${{ inputs.league }}
+    secrets: inherit
 
   season-end:
     needs: determine-leagues
