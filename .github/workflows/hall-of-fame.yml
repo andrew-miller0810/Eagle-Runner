@@ -1,0 +1,44 @@
+name: Hall of Fame
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_year:
+        description: 'Which season year to generate results for'
+        required: false
+        default: ''
+      league:
+        description: 'Which league to run for (leave blank for all)'
+        required: false
+        default: ''
+
+jobs:
+  determine-leagues:
+    uses: ./.github/workflows/_shared-league-matrix.yml
+    with:
+      league_filter: ${{ inputs.league }}
+
+  hall-of-fame:
+    needs: determine-leagues
+    strategy:
+      matrix:
+        league: ${{ fromJson(needs.determine-leagues.outputs.leagues) }}
+    environment: ${{ matrix.league }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: andrew-miller0810/Eagle
+          token: ${{ secrets.EAGLE_PAT }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: Run hall of fame report
+        env:
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
+          DISCORD_WEBHOOK_HOF: ${{ secrets.DISCORD_WEBHOOK_HOF }}
+          LEAGUE_SLUG: ${{ matrix.league }}
+          TARGET_YEAR: ${{ inputs.target_year }}
+        run: python -m scripts.reports.hall_of_fame

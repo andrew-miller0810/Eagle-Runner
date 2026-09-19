@@ -1,0 +1,38 @@
+name: Weekly Recap
+
+on:
+#   schedule:
+#     - cron: '0 13 * * 2'
+  workflow_dispatch:
+
+concurrency:
+  group: ff-bot-data-writes
+  cancel-in-progress: false
+
+jobs:
+  determine-leagues:
+    uses: ./.github/workflows/_shared-league-matrix.yml
+
+  weekly-recap:
+    needs: determine-leagues
+    strategy:
+      matrix:
+        league: ${{ fromJson(needs.determine-leagues.outputs.leagues) }}
+    environment: ${{ matrix.league }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: andrew-miller0810/Eagle
+          token: ${{ secrets.EAGLE_PAT }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: Run weekly recap
+        env:
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
+          DISCORD_WEBHOOK_RECAP: ${{ secrets.DISCORD_WEBHOOK_RECAP }}
+          LEAGUE_SLUG: ${{ matrix.league }}
+        run: python -m scripts.reports.weekly_recap

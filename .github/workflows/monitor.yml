@@ -1,0 +1,69 @@
+name: Monitor (Injuries + Transactions)
+
+on:
+#   schedule:
+#     - cron: '7,37 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ff-bot-data-writes
+  cancel-in-progress: false
+
+jobs:
+  determine-leagues:
+    uses: ./.github/workflows/_shared-league-matrix.yml
+
+  monitor:
+    needs: determine-leagues
+    strategy:
+      matrix:
+        league: ${{ fromJson(needs.determine-leagues.outputs.leagues) }}
+      fail-fast: false
+    environment: ${{ matrix.league }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: andrew-miller0810/Eagle
+          token: ${{ secrets.EAGLE_PAT }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: Run monitor
+        env:
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
+          DISCORD_WEBHOOK_MONITOR: ${{ secrets.DISCORD_WEBHOOK_MONITOR }}
+          LEAGUE_SLUG: ${{ matrix.league }}
+        run: python -m scripts.reports.monitor
+      - name: Stage state files for upload
+        run: |
+          mkdir -p upload_staging/data/${{ matrix.league }}
+          cp -r data/${{ matrix.league }}/* upload_staging/data/${{ matrix.league }}/
+      - name: Upload state files
+        uses: actions/upload-artifact@v4
+        with:
+          name: state-${{ matrix.league }}
+          path: upload_staging/data
+
+  commit-all:
+    needs: monitor
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: andrew-miller0810/Eagle
+          token: ${{ secrets.EAGLE_PAT }}
+      - name: Download all state artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: data
+          pattern: state-*
+          merge-multiple: true
+      - name: Commit and push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update injury/transaction state (all leagues)"
+          file_pattern: 'data/**/*.json'

@@ -1,0 +1,31 @@
+name: Determine Leagues (shared)
+
+on:
+  workflow_call:
+    inputs:
+      league_filter:
+        required: false
+        type: string
+        default: ''
+    outputs:
+      leagues:
+        value: ${{ jobs.determine.outputs.leagues }}
+
+jobs:
+  determine:
+    runs-on: ubuntu-latest
+    outputs:
+      leagues: ${{ steps.set-matrix.outputs.leagues }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: andrew-miller0810/Eagle
+          token: ${{ secrets.EAGLE_PAT }}
+      - id: set-matrix
+        run: |
+          if [ -z "${{ inputs.league_filter }}" ]; then
+            LEAGUES=$(python3 -c "import json; print(json.dumps(list(json.load(open('leagues.json')).keys())))")
+            echo "leagues=$LEAGUES" >> "$GITHUB_OUTPUT"
+          else
+            echo "leagues=[\"${{ inputs.league_filter }}\"]" >> "$GITHUB_OUTPUT"
+          fi
