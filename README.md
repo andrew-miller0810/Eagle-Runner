@@ -22,6 +22,7 @@ No code or data from the private repository is stored, cached, or exposed in thi
 | `monitor.yml` | Scheduled (frequent) | Polls for and reports on new activity across all configured leagues. |
 | `lineup-check.yml` | Scheduled (daily) | Checks for lineup issues ahead of a deadline. |
 | `weekly-recap.yml` | Scheduled (weekly) | Posts a recap of recent activity. |
+| `career-h2h.yml` | Scheduled (weekly) | Posts each current matchup's career and season head-to-head record, per owner (opt-in per league via a webhook secret). |
 | `season-end.yml` | Manual | Generates an end-of-season report. |
 | `hall-of-fame.yml` | Manual | Generates historical/hall-of-fame results. |
 | `_shared-league-matrix.yml` | Reusable (called by other workflows) | Determines which leagues to run against, optionally filtered to one. |
@@ -34,6 +35,7 @@ This repository is configured with:
 
 - A repository-level secret providing read/write access to the private companion repository (used for checkout and for committing results back).
 - One GitHub Environment per league, each holding that league's own credentials and webhook secrets, referenced via each workflow's matrix strategy.
+- Some report webhooks are opt-in per league: if unset for a given league's Environment, the corresponding report skips itself cleanly rather than failing.
 
 No secrets or Environment configuration are duplicated in the private repository — this repo is the sole place where automation credentials are configured and consumed.
 
